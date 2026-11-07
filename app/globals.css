@@ -87,6 +87,24 @@ textarea {
   font-size: 16px;
 }
 
+.masthead .byline {
+  flex-basis: 100%;
+  max-width: none;
+  font-size: 14px;
+}
+
+.masthead .byline a,
+.foot a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.masthead .byline a:hover,
+.foot a:hover {
+  color: var(--orange-ink);
+}
+
 /* ---- panels ------------------------------------------------------------ */
 
 .workbench {
@@ -1058,6 +1076,10 @@ textarea {
   font-size: 13px;
   max-width: 80ch;
   margin-top: 20px;
+}
+
+.foot p {
+  margin: 0 0 8px;
 }
 
 /* ---- responsive --------------------------------------------------------- */

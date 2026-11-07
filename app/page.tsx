@@ -21,6 +21,7 @@ import { SimEngine } from "@/lib/sim/engine";
 import { MidiPreview } from "@/lib/sim/audio";
 import Simulator, { PART_COLORS } from "@/components/Simulator";
 import PianoRoll, { RollNote } from "@/components/PianoRoll";
+import { AUTHOR, AUTHOR_URL, LICENSE_NAME, LICENSE_URL, REPO_URL } from "@/lib/attribution";
 
 type RepeatMode = "once" | "forever" | "times";
 
@@ -364,6 +365,11 @@ export default function Home() {
           Turn a MIDI file into RobotC for the LEGO Mindstorms NXT, then hear it the way the brick will play it, line by line if
           you like.
         </p>
+        <p className="byline">
+          Made by <a href={AUTHOR_URL} target="_blank" rel="noopener noreferrer">{AUTHOR}</a>.{" "}
+          <a href={REPO_URL} target="_blank" rel="noopener noreferrer">Source code on GitHub</a>.{" "}
+          <a href={LICENSE_URL} target="_blank" rel="noopener noreferrer">{LICENSE_NAME} license</a>.
+        </p>
       </header>
 
       <div className="workbench">
@@ -660,6 +666,11 @@ export default function Home() {
         <p>
           The simulator follows RobotC for the NXT: 16-bit ints, the sound queue behind PlayTone, wait1Msec, tasks, the screen and
           buttons. Motors and sensors are only stand-ins, and PlaySound effects are approximations.
+        </p>
+        <p>
+          &copy; 2026 <a href={AUTHOR_URL} target="_blank" rel="noopener noreferrer">{AUTHOR}</a>. Open source under the{" "}
+          <a href={LICENSE_URL} target="_blank" rel="noopener noreferrer">{LICENSE_NAME} license</a>. Read or contribute to the
+          code at <a href={REPO_URL} target="_blank" rel="noopener noreferrer">github.com/enVId-tech/Midi-To-RobotC</a>.
         </p>
       </footer>
     </main>
