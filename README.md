@@ -1,50 +1,65 @@
-# MIDI → LEGO NXT RobotC Converter
+# MIDI to NXT
 
-A small Next.js app that parses a MIDI file in the browser and generates
-RobotC source code to play the melody on a LEGO Mindstorms NXT brick's
-built-in speaker.
+Source: https://github.com/enVId-tech/Midi-To-RobotC
 
-## How it works
-
-1. You upload a `.mid`/`.midi` file (parsed client-side with `@tonejs/midi`,
-   nothing is uploaded to a server).
-2. Pick which track to convert — the NXT speaker can only play one note at a
-   time, so choose the track with the melody (not drums/percussion).
-3. Each MIDI note is converted to a frequency in Hz (`freq = 440 * 2^((midiNote-69)/12)`)
-   and a duration in centiseconds (RobotC's `PlayTone` duration unit).
-4. The app emits a `task main() { ... }` block of `PlayTone(freq, duration);`
-   / `wait1Msec(...)` pairs, with `wait1Msec` rests inserted for silences.
-5. Download the generated `.c` file and open it in the RobotC IDE, or paste
-   its contents into an existing project.
-
-## Setup
+Convert MIDI files to RobotC for the LEGO Mindstorms NXT, and hear the result in a
+RobotC simulator before downloading it to a brick.
 
 ```bash
 npm install
-npm run dev
+npm run dev      # http://localhost:3000
+npm test         # interpreter, converter and simulator tests
 ```
 
-Then open http://localhost:3000.
+## Converter
 
-## Project structure
+- Pick tracks (drum tracks are skipped by default), or try the built-in sample song.
+- **1 NXT:** play the melody (highest voice), the bass line, or every note as written.
+- **2-4 NXTs:** the music is split into melody, harmony and bass, one program per NXT.
+  The outer voices (melody and bass) are kept first.
+- Melody extraction only starts a note at its own onset, so held accompaniment notes
+  never "take over" the melody line in the small gaps between melody notes.
+- Code style: compact (data array + loop) or one line per note, grouped by measure.
+- Repeat once, forever, or N times; transpose; tempo; convert only some measures;
+  pitch range with octave folding, clamping or dropping; volume; title on the LCD;
+  wait for the orange button (to start several NXTs together).
+- Generated code waits on `nPgmTime` instead of fixed delays, so it doesn't drift over a
+  long song, and keeps every duration small enough for RobotC's 16-bit `int`.
+
+## Simulator
+
+A RobotC interpreter (`lib/robotc`) runs the code the way an NXT would, and
+`lib/sim` plays it through Web Audio.
+
+- Play, pause, stop, and click the timeline to jump anywhere.
+- Step, step over, step out; click a line number for a breakpoint.
+- Select lines (click, shift-click) and play just those, once or on a loop;
+  play from a line; run to a line.
+- Simulated NXT screen and buttons, speaker readout, debug stream, and a
+  variables view when paused.
+- Several NXTs play together on one clock, with mute per NXT.
+- Edit the code or paste your own RobotC; errors and warnings point to lines.
+
+What it models: 16-bit `int` (with overflow warnings), `long`, `float`, `string`, arrays,
+functions (including `&` parameters), tasks, `#define`, the `PlayTone` sound queue,
+`PlayImmediateTone`, `ClearSounds`, `nVolume`, `bSoundActive`, waits and timers,
+`random`, the LCD functions with printf formatting, buttons, and the debug stream.
+Motors and sensors are simple stand-ins, `PlaySound` effects are approximations, and
+sound files can't be played.
+
+## Layout
 
 ```
-app/
-  layout.tsx       root layout
-  page.tsx          upload UI, track picker, code preview/download
-  globals.css       styling
-lib/
-  midiToRobotC.ts   MIDI parsing -> RobotC code generation
+app/page.tsx              converter UI
+lib/attribution.ts        author, repository and license shown in the page
+components/Simulator.tsx  simulator UI (CodeView, NxtBrick, PianoRoll)
+lib/midiToRobotC.ts       MIDI -> RobotC conversion
+lib/robotc/               lexer, parser, type checker, interpreter
+lib/sim/engine.ts         playback, seeking, stepping, breakpoints, selections
+lib/sim/audio.ts          Web Audio speakers and the original-MIDI preview
+tests/run.ts              tests
 ```
 
-## Known limitations
+## License
 
-- Only single-voice (monophonic) output — polyphonic passages in the source
-  track get flattened to overlapping/sequential tones based on note order,
-  since the NXT can only sound one tone at a time.
-- `PlayTone` frequency range is clamped to roughly 220Hz–14kHz to match what
-  the NXT speaker can reliably reproduce.
-- Notes shorter than 30ms are dropped as likely MIDI noise/grace notes; adjust
-  `minDurationMs` in `lib/midiToRobotC.ts` if you want to keep them.
-- Tempo/timing comes straight from the MIDI file's absolute note timestamps,
-  so tempo changes mid-file are respected automatically.
+MIT. Copyright (c) 2026 Erick Tran. See [LICENSE](LICENSE).
