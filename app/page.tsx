@@ -367,6 +367,7 @@ export default function Home() {
         </p>
         <p className="byline">
           Made by <a href={AUTHOR_URL} target="_blank" rel="noopener noreferrer">{AUTHOR}</a>.{" "}
+          Made during the <a href="https://sites.google.com/ucsd.edu/cluster-2/teams?authuser=0" target="_blank" rel="noopener noreferrer">2026 UC San Diego COSMOS summer program, Cluster 2.</a>{" "}
           <a href={REPO_URL} target="_blank" rel="noopener noreferrer">Source code on GitHub</a>.{" "}
           <a href={LICENSE_URL} target="_blank" rel="noopener noreferrer">{LICENSE_NAME} license</a>.
         </p>
