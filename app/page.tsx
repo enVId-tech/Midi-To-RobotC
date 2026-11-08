@@ -22,6 +22,7 @@ import { SimEngine } from "@/lib/sim/engine";
 import { MidiPreview } from "@/lib/sim/audio";
 import Simulator, { PART_COLORS } from "@/components/Simulator";
 import PianoRoll, { RollNote } from "@/components/PianoRoll";
+import SeoContent from "@/components/SeoContent";
 import { AUTHOR, AUTHOR_URL, LICENSE_NAME, LICENSE_URL, REPO_URL } from "@/lib/attribution";
 
 type RepeatMode = "once" | "forever" | "times";
@@ -690,6 +691,8 @@ export default function Home() {
           onPlay={pausePreview}
         />
       </section>
+
+      <SeoContent />
 
       <footer className="foot">
         <p>
