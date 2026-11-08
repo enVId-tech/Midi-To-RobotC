@@ -14,7 +14,7 @@ export type CodeStyle = "compact" | "expanded";
 export interface ConvertOptions {
   /** Track indexes to include. Empty/undefined = every non-drum track with notes. */
   tracks?: number[];
-  /** Number of NXT bricks to split the music across (1-4). */
+  /** Number of NXT bricks to split the music across (1 to MAX_NXTS). */
   nxtCount?: number;
   /** Only used when nxtCount is 1. */
   voiceMode?: VoiceMode;
@@ -288,6 +288,9 @@ function splitByRank(notes: SimpleNote[], count: number, fromBottom: boolean): S
   for (let v = 0; v < count; v++) if (voice[v]) close(v, voice[v]!.end);
   return lines;
 }
+
+/** The most NXTs the converter will split a piece across. */
+export const MAX_NXTS = 64;
 
 export function partLabel(index: number, total: number, voiceMode: VoiceMode): string {
   if (total === 1) {
@@ -665,7 +668,7 @@ function resolve(options: ConvertOptions, tracks: TrackSummary[]): ResolvedOptio
   for (const [k, v] of Object.entries(options)) {
     if (v !== undefined) (o as unknown as Record<string, unknown>)[k] = v;
   }
-  o.nxtCount = Math.max(1, Math.min(4, Math.round(o.nxtCount)));
+  o.nxtCount = Math.max(1, Math.min(MAX_NXTS, Math.round(o.nxtCount) || 1));
   o.tempoPercent = Math.max(10, Math.min(400, o.tempoPercent || 100));
   o.repeatCount = Math.max(0, Math.round(o.repeatCount));
   o.minFrequency = Math.max(20, o.minFrequency);
@@ -740,10 +743,17 @@ export function convertMidi(midi: Midi, options: ConvertOptions = {}): Conversio
     };
   });
 
+  const silent = parts.filter((p) => p.noteCount === 0);
+  if (parts.length > 1 && silent.length > 0) {
+    const list = silent.map((p) => p.nxtNumber).join(", ");
+    warnings.push(
+      silent.length === parts.length
+        ? "No part has any notes."
+        : `NXT ${list} ${silent.length === 1 ? "has" : "have"} no notes. This music never plays more than ${parts.length - silent.length} notes at once, so you can use ${parts.length - silent.length} NXTs or fewer.`
+    );
+  }
+
   parts.forEach((p) => {
-    if (p.noteCount === 0 && parts.length > 1) {
-      warnings.push(`NXT ${p.nxtNumber} (${p.label}) has no notes -- the music never has ${parts.length} notes at once. Try fewer NXTs.`);
-    }
     if (p.outOfRangeCount > 0) {
       const verb = o.rangeMode === "octave" ? "moved by an octave" : o.rangeMode === "clamp" ? "clamped" : "dropped";
       warnings.push(
