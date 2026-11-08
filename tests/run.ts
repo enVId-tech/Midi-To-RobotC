@@ -7,6 +7,10 @@ import { sampleSong } from "../lib/sampleSong";
 import { midiInfo, measureToSeconds } from "../lib/midiInfo";
 import { MAX_NXTS } from "../lib/midiToRobotC";
 import { crc32, makeZip } from "../lib/zip";
+import { FAQS } from "../lib/faq";
+import { HOME_TITLE, SITE_DESCRIPTION, SITE_URL, absoluteUrl } from "../lib/site";
+import sitemap from "../app/sitemap";
+import robots from "../app/robots";
 
 let passed = 0;
 let failed = 0;
@@ -187,6 +191,18 @@ check("measure seconds", Math.abs(measureToSeconds(midi, 3) - (2 * 4 * 60) / 112
   quiet.addCC({ number: 7, value: 0.3, time: 0 });
   const lo = convertMidi(cc, { tracks: [0], dynamics: true }).parts[0].events.filter((e) => e.frequency > 0);
   check("CC 7 is read", lo.every((e) => Math.abs((e.velocity ?? 0) - 0.3 * 1) <= 0.3) && Math.max(...lo.map((e) => e.velocity ?? 0)) < 0.35);
+}
+
+// Search engine basics.
+{
+  check("site url has no trailing slash", !SITE_URL.endsWith("/") && /^https?:\/\//.test(SITE_URL));
+  check("absoluteUrl joins paths", absoluteUrl("/a") === `${SITE_URL}/a` && absoluteUrl("a") === `${SITE_URL}/a`);
+  check("title length", HOME_TITLE.length >= 30 && HOME_TITLE.length <= 60, String(HOME_TITLE.length));
+  check("description length", SITE_DESCRIPTION.length >= 70 && SITE_DESCRIPTION.length <= 160, String(SITE_DESCRIPTION.length));
+  const urls = sitemap().map((e) => e.url);
+  check("sitemap lists the pages", urls.includes(absoluteUrl("/")) && urls.includes(absoluteUrl("/nxt-note-frequencies")) && new Set(urls).size === urls.length);
+  check("robots points at the sitemap", robots().sitemap === absoluteUrl("/sitemap.xml"));
+  check("faq entries are complete and unique", FAQS.length >= 5 && FAQS.every((f) => f.question.endsWith("?") && f.answer.length > 40) && new Set(FAQS.map((f) => f.question)).size === FAQS.length);
 }
 
 // ZIP writer.
