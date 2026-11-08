@@ -7,8 +7,9 @@ import { formatTime, frequencyToNoteName } from "@/lib/midiToRobotC";
 import CodeView, { Selection } from "./CodeView";
 import NxtBrick from "./NxtBrick";
 import PianoRoll, { RollNote } from "./PianoRoll";
+import { makeZip } from "@/lib/zip";
 
-export const PART_COLORS = ["#E8820C", "#2F6FDB", "#2E9D5B", "#8A4FD1"];
+export const PART_COLORS = ["#E8820C", "#2F6FDB", "#2E9D5B", "#8A4FD1", "#C93A6B", "#0F9AA8", "#8C7A1E", "#5C6670"];
 
 interface Props {
   engine: SimEngine;
@@ -19,8 +20,8 @@ interface Props {
   onPlay?: () => void;
 }
 
-function download(name: string, text: string) {
-  const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
+function download(name: string, text: string | Uint8Array, type = "text/plain") {
+  const url = URL.createObjectURL(new Blob([text as BlobPart], { type }));
   const a = document.createElement("a");
   a.href = url;
   a.download = name;
@@ -116,7 +117,7 @@ export default function Simulator({ engine, generated, fileBase, onRevert, onPla
         {multi ? (
           <div className="tabs" role="tablist" aria-label="NXTs">
             {snap.bricks.map((b, i) => (
-              <div key={i} className={`tab${i === focus ? " active" : ""}`} style={{ "--part": PART_COLORS[i % 4] } as React.CSSProperties}>
+              <div key={i} className={`tab${i === focus ? " active" : ""}`} style={{ "--part": PART_COLORS[i % PART_COLORS.length] } as React.CSSProperties}>
                 <button type="button" role="tab" aria-selected={i === focus} className="tab-main" onClick={() => engine.setFocus(i)}>
                   <span className="swatch" aria-hidden />
                   {b.name}
@@ -167,9 +168,15 @@ export default function Simulator({ engine, generated, fileBase, onRevert, onPla
             <button
               type="button"
               className="btn small"
-              onClick={() => snap.bricks.forEach((b, i) => setTimeout(() => download(fileName(i), b.code), i * 300))}
+              onClick={() =>
+                download(
+                  `${fileBase || "song"}-nxt-programs.zip`,
+                  makeZip(snap.bricks.map((b, i) => ({ name: fileName(i), text: b.code }))),
+                  "application/zip"
+                )
+              }
             >
-              Download all {snap.bricks.length}
+              Download all {snap.bricks.length} (.zip)
             </button>
           )}
         </div>
