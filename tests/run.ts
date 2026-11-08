@@ -150,6 +150,45 @@ check("measure seconds", Math.abs(measureToSeconds(midi, 3) - (2 * 4 * 60) / 112
   check("zero and NaN fall back to one NXT", convertMidi(midi, { nxtCount: 0 }).parts.length === 1 && convertMidi(midi, { nxtCount: NaN }).parts.length === 1);
 }
 
+// Dynamics: NXT volume follows the MIDI's loudness.
+{
+  const off = convertMidi(midi, { tracks: [0] });
+  check("dynamics off keeps one volume", off.parts[0].events.every((e) => e.volume === undefined) && !/song\[i \+ 2\]/.test(off.parts[0].code));
+  for (const codeStyle of ["compact", "expanded"] as const) {
+    const on = convertMidi(midi, { tracks: [0], dynamics: true, codeStyle });
+    const code = on.parts[0].code;
+    const c = compile(code);
+    check(`dynamics ${codeStyle} compiles`, !!c.program && c.diagnostics.length === 0, c.diagnostics.map((d) => d.message).join("; "));
+    const tones = on.parts[0].events.filter((e) => e.frequency > 0);
+    const levels = new Set(tones.map((e) => e.volume));
+    check(`dynamics ${codeStyle} uses several levels`, levels.size >= 3 && tones.every((e) => e.volume! >= 1 && e.volume! <= 4), Array.from(levels).join(","));
+    check(`dynamics ${codeStyle} writes the volume`, codeStyle === "compact" ? /NOTE_COUNT \* 3/.test(code) : /playNote\(\d+, \d+, [1-4]\)/.test(code));
+    // The simulated NXT really plays each note at its volume.
+    const b = new Brick(c.program!);
+    b.run({ maxSteps: 5e6 });
+    const played = b.tones;
+    check(`dynamics ${codeStyle} plays at the chosen volumes`, played.length === tones.length && played.every((t, i) => t.volume === tones[i].volume), `${played.length} vs ${tones.length}`);
+  }
+  const capped = convertMidi(midi, { tracks: [0], dynamics: true, volume: 2 });
+  check("loudest level follows the volume option", capped.parts[0].events.every((e) => e.frequency === 0 || (e.volume! >= 1 && e.volume! <= 2)));
+  const multi = convertMidi(midi, { tracks: [0], dynamics: true, nxtCount: 3 });
+  check(
+    "all parts share one loudness scale",
+    multi.parts.every((p) => !!compile(p.code).program) && multi.parts.some((p) => p.events.some((e) => e.volume === 1)) && multi.parts.some((p) => p.events.some((e) => e.volume === 4))
+  );
+  // Flat loudness: one level and a warning.
+  const flat = sampleSong();
+  for (const t of flat.tracks) for (const n of t.notes) (n as { velocity: number }).velocity = 0.7;
+  const fr = convertMidi(flat, { tracks: [0], dynamics: true });
+  check("flat music reports it", fr.warnings.some((w) => /almost no loudness changes/.test(w)) && fr.parts[0].events.every((e) => e.frequency === 0 || e.volume === 4));
+  // Channel volume (CC 7) scales the loudness of a track.
+  const cc = sampleSong();
+  const quiet = cc.tracks[0];
+  quiet.addCC({ number: 7, value: 0.3, time: 0 });
+  const lo = convertMidi(cc, { tracks: [0], dynamics: true }).parts[0].events.filter((e) => e.frequency > 0);
+  check("CC 7 is read", lo.every((e) => Math.abs((e.velocity ?? 0) - 0.3 * 1) <= 0.3) && Math.max(...lo.map((e) => e.velocity ?? 0)) < 0.35);
+}
+
 // ZIP writer.
 {
   check("crc32", crc32(new TextEncoder().encode("123456789")) === 0xcbf43926);
