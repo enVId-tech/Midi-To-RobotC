@@ -49,7 +49,9 @@ export function sampleSong(): Midi {
   for (let rep = 0; rep < 2; rep++) {
     for (let b = 0; b < bars; b++) {
       const bar = rep * bars + b;
-      for (const [at, len, note] of melody[b]) add(bar, at, len, note, 0.85);
+      // A phrase that swells towards bar 5 and relaxes again, with a small accent on each downbeat.
+      const swell = 0.5 + 0.3 * Math.sin((Math.PI * (b + 0.5)) / bars);
+      for (const [at, len, note] of melody[b]) add(bar, at, len, note, Math.min(1, swell + (at === 0 ? 0.1 : 0)));
       const [root, tones] = chords[b];
       add(bar, 0, 2, root, 0.6);
       add(bar, 2, 2, root + 12, 0.55);
