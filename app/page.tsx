@@ -8,6 +8,7 @@ import {
   convertMidi,
   defaultTrackSelection,
   formatTime,
+  MAX_NXTS,
   midiNoteName,
   RangeMode,
   summarizeTracks,
@@ -113,6 +114,13 @@ function NumberField(props: {
       {props.help && <span className="field-help">{props.help}</span>}
     </label>
   );
+}
+
+function nxtHelp(n: number): string {
+  if (n === 1) return "One NXT plays one note at a time.";
+  if (n === 2) return "The music is split into melody and bass, one program per NXT.";
+  if (n === 3) return "The music is split into melody, harmony and bass, one program per NXT.";
+  return `The music is split into melody, ${n - 2} harmony parts and bass, one program per NXT. Parts with nothing to play are reported below, so you can use fewer NXTs.`;
 }
 
 function Segmented<T extends string | number>(props: {
@@ -333,7 +341,7 @@ export default function Home() {
             start: s,
             end: s + e.durationCs * 10 * scale,
             pitch: e.midi - settings.transpose,
-            color: PART_COLORS[pi % 4],
+            color: PART_COLORS[pi % PART_COLORS.length],
             alpha: 0.95,
           });
         }
@@ -465,14 +473,17 @@ export default function Home() {
             <Segmented
               label="Number of NXTs"
               value={settings.nxtCount}
-              options={[1, 2, 3, 4].map((n) => ({ value: n, label: String(n) }))}
+              options={[1, 2, 3, 4, 5, 6, 7, 8].map((n) => ({ value: n, label: String(n) }))}
               onChange={(v) => set("nxtCount", v)}
             />
-            <p className="field-help">
-              {settings.nxtCount === 1
-                ? "One NXT plays one note at a time."
-                : `The music is split into ${settings.nxtCount === 2 ? "melody and bass" : settings.nxtCount === 3 ? "melody, harmony and bass" : "melody, two harmony parts and bass"}, one program per NXT.`}
-            </p>
+            <NumberField
+              label={`Or any number up to ${MAX_NXTS}`}
+              value={settings.nxtCount}
+              min={1}
+              max={MAX_NXTS}
+              onChange={(v) => set("nxtCount", Math.round(v))}
+            />
+            <p className="field-help">{nxtHelp(settings.nxtCount)}</p>
             {settings.nxtCount === 1 && (
               <Segmented
                 label="Which notes to play"
@@ -618,7 +629,7 @@ export default function Home() {
               </span>
               {res?.parts.map((p, i) => (
                 <span key={i}>
-                  <i style={{ background: PART_COLORS[i % 4] }} /> {res.parts.length > 1 ? `NXT ${p.nxtNumber} ` : ""}
+                  <i style={{ background: PART_COLORS[i % PART_COLORS.length] }} /> {res.parts.length > 1 ? `NXT ${p.nxtNumber} ` : ""}
                   {p.label}: {p.noteCount} notes, {formatTime(p.durationSeconds)}
                 </span>
               ))}
