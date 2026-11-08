@@ -43,6 +43,7 @@ interface Settings {
   minNoteMs: number;
   repeatGapMs: number;
   volume: number;
+  dynamics: boolean;
   showOnLcd: boolean;
   waitForButton: boolean;
   title: string;
@@ -62,6 +63,7 @@ const BASE_SETTINGS: Omit<Settings, "tracks" | "startMeasure" | "endMeasure" | "
   minNoteMs: 30,
   repeatGapMs: 35,
   volume: 4,
+  dynamics: false,
   showOnLcd: true,
   waitForButton: false,
 };
@@ -224,6 +226,7 @@ export default function Home() {
         minNoteMs: settings.minNoteMs,
         repeatGapMs: settings.repeatGapMs,
         volume: settings.volume,
+        dynamics: settings.dynamics,
         showOnLcd: settings.showOnLcd,
         waitForButton: settings.waitForButton,
         title: settings.title,
@@ -342,7 +345,7 @@ export default function Home() {
             end: s + e.durationCs * 10 * scale,
             pitch: e.midi - settings.transpose,
             color: PART_COLORS[pi % PART_COLORS.length],
-            alpha: 0.95,
+            alpha: e.volume ? 0.35 + 0.6 * (e.volume / 4) : 0.95,
           });
         }
       });
@@ -504,6 +507,20 @@ export default function Home() {
               </p>
             )}
             <Segmented
+              label="Loudness"
+              value={settings.dynamics ? "follow" : "same"}
+              options={[
+                { value: "same", label: "Same volume" },
+                { value: "follow", label: "Follow the MIDI" },
+              ]}
+              onChange={(v) => set("dynamics", v === "follow")}
+            />
+            <p className="field-help">
+              {settings.dynamics
+                ? `Louder and softer notes in the MIDI get different NXT volumes, from 1 to ${settings.volume}. The NXT only has four levels, so changes are in steps.`
+                : "Every note plays at the NXT volume below."}
+            </p>
+            <Segmented
               label="Code style"
               value={settings.codeStyle}
               options={[
@@ -583,7 +600,7 @@ export default function Home() {
                 The gap makes the buzzer stop briefly so the same note played twice is heard twice instead of as one long note.
               </p>
               <Segmented
-                label="NXT volume"
+                label={settings.dynamics ? "Loudest NXT volume" : "NXT volume"}
                 value={settings.volume}
                 options={[1, 2, 3, 4].map((v) => ({ value: v, label: String(v) }))}
                 onChange={(v) => set("volume", v)}
