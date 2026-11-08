@@ -12,6 +12,10 @@ COPY . /nextapp
 
 RUN npm install
 
+# The public address of the site, used for canonical links, the sitemap and social previews.
+ARG NEXT_PUBLIC_SITE_URL
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+
 RUN npm run build
 
 # Make port 3040 available to the world outside this container

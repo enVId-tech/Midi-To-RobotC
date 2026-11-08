@@ -22,7 +22,7 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
       - name: Build the Docker image
-        run: docker build . --file Dockerfile --tag envidtech/midi-to-robotc:latest
+        run: docker build . --file Dockerfile --build-arg NEXT_PUBLIC_SITE_URL=${{ vars.SITE_URL }} --tag envidtech/midi-to-robotc:latest
 
       - name: Push to Docker Hub
         run: docker push envidtech/midi-to-robotc:latest
