@@ -15,7 +15,8 @@ npm test         # interpreter, converter and simulator tests
 
 - Pick tracks (drum tracks are skipped by default), or try the built-in sample song.
 - **1 NXT:** play the melody (highest voice), the bass line, or every note as written.
-- **2-4 NXTs:** the music is split into melody, harmony and bass, one program per NXT.
+- **2 or more NXTs (up to 64):** the music is split into melody, harmony parts and bass, one program per NXT.
+  Parts with nothing to play are reported, so you know when you can use fewer NXTs. "Download all" gives one zip.
   The outer voices (melody and bass) are kept first.
 - Melody extraction only starts a note at its own onset, so held accompaniment notes
   never "take over" the melody line in the small gaps between melody notes.
@@ -54,6 +55,7 @@ app/page.tsx              converter UI
 lib/attribution.ts        author, repository and license shown in the page
 components/Simulator.tsx  simulator UI (CodeView, NxtBrick, PianoRoll)
 lib/midiToRobotC.ts       MIDI -> RobotC conversion
+lib/zip.ts                zip writer for downloading every NXT program at once
 lib/robotc/               lexer, parser, type checker, interpreter
 lib/sim/engine.ts         playback, seeking, stepping, breakpoints, selections
 lib/sim/audio.ts          Web Audio speakers and the original-MIDI preview
