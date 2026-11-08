@@ -21,6 +21,8 @@ npm test         # interpreter, converter and simulator tests
 - Melody extraction only starts a note at its own onset, so held accompaniment notes
   never "take over" the melody line in the small gaps between melody notes.
 - Code style: compact (data array + loop) or one line per note, grouped by measure.
+- Loudness: "Follow the MIDI" gives each note an NXT volume from 1 to your chosen top level, based on its velocity,
+  channel volume (CC 7) and expression (CC 11). The NXT has only four levels, so changes are in steps.
 - Repeat once, forever, or N times; transpose; tempo; convert only some measures;
   pitch range with octave folding, clamping or dropping; volume; title on the LCD;
   wait for the orange button (to start several NXTs together).
