@@ -5,6 +5,8 @@ import { formatPrintf } from "../lib/robotc/printf";
 import { convertMidi, ConvertOptions } from "../lib/midiToRobotC";
 import { sampleSong } from "../lib/sampleSong";
 import { midiInfo, measureToSeconds } from "../lib/midiInfo";
+import { MAX_NXTS } from "../lib/midiToRobotC";
+import { crc32, makeZip } from "../lib/zip";
 
 let passed = 0;
 let failed = 0;
@@ -129,8 +131,42 @@ const info = midiInfo(midi);
 check("sample info", info.measures === 16 && info.timeSignature === "4/4");
 check("measure seconds", Math.abs(measureToSeconds(midi, 3) - (2 * 4 * 60) / 112) < 1e-3);
 
+// More than four NXTs.
+{
+  const r8 = convertMidi(midi, { tracks: [0, 1], nxtCount: 8 });
+  check("8 NXTs gives 8 parts", r8.parts.length === 8 && r8.parts.every((p, i) => p.nxtNumber === i + 1));
+  check(
+    "8 NXT labels",
+    r8.parts[0].label === "Melody" && r8.parts[7].label === "Bass" && r8.parts[1].label === "Harmony 1" && r8.parts[6].label === "Harmony 6",
+    r8.parts.map((p) => p.label).join(",")
+  );
+  check("8 NXT programs compile", r8.parts.every((p) => !!compile(p.code).program));
+  check("8 NXT header names the part", r8.parts[7].code.includes("Part 8 of 8"));
+  const r16 = convertMidi(midi, { tracks: [0, 1], nxtCount: 16 });
+  check("16 NXTs gives 16 parts", r16.parts.length === 16);
+  check("silent parts are reported once", r16.warnings.filter((w) => /have no notes|has no notes/.test(w)).length === 1, r16.warnings.join(" | "));
+  check("silent parts still compile", r16.parts.every((p) => !!compile(p.code).program));
+  check("limit", convertMidi(midi, { nxtCount: 500 }).parts.length === MAX_NXTS);
+  check("zero and NaN fall back to one NXT", convertMidi(midi, { nxtCount: 0 }).parts.length === 1 && convertMidi(midi, { nxtCount: NaN }).parts.length === 1);
+}
+
+// ZIP writer.
+{
+  check("crc32", crc32(new TextEncoder().encode("123456789")) === 0xcbf43926);
+  const zip = makeZip([
+    { name: "a-nxt1.c", text: "task main() {}\n" },
+    { name: "b-nxt2.c", text: "// \u00e9" },
+  ]);
+  const dv = new DataView(zip.buffer, zip.byteOffset, zip.byteLength);
+  const eocd = zip.length - 22;
+  check("zip end record", dv.getUint32(eocd, true) === 0x06054b50 && dv.getUint16(eocd + 10, true) === 2);
+  const centralAt = dv.getUint32(eocd + 16, true);
+  check("zip central directory", dv.getUint32(centralAt, true) === 0x02014b50);
+  check("zip first entry", dv.getUint32(0, true) === 0x04034b50 && new TextDecoder().decode(zip.slice(30, 38)) === "a-nxt1.c");
+}
+
 const matrix: ConvertOptions[] = [];
-for (const nxtCount of [1, 2, 3, 4])
+for (const nxtCount of [1, 2, 3, 4, 5, 8])
   for (const codeStyle of ["compact", "expanded"] as const) matrix.push({ nxtCount, codeStyle });
 for (const voiceMode of ["highest", "lowest", "off"] as const) matrix.push({ voiceMode });
 matrix.push({ transpose: -14, tempoPercent: 63, rangeMode: "clamp" });
@@ -364,6 +400,21 @@ async function engineTests() {
     check("multi-NXT finishes", s.status === "finished", s.status);
     const after = s.timeline.tones.filter((t) => t.end > 20000);
     check("multi-NXT plays every part from the seek point", played.length === after.length, `${played.length} vs ${after.length}`);
+    e.dispose();
+  }
+
+  // Eight NXTs run on one clock.
+  {
+    played.length = 0;
+    const parts = convertMidi(midi, { tracks: [0, 1], nxtCount: 8 }).parts;
+    const e = new SimEngine();
+    e.load(parts.map((p) => ({ name: p.label, code: p.code })));
+    check("8 bricks load", e.getSnapshot().bricks.length === 8);
+    e.play();
+    advance(e, 120);
+    const s = e.getSnapshot();
+    check("8 NXTs finish", s.status === "finished", s.status);
+    check("8 NXTs play every note", played.length === s.timeline.tones.length && played.length > 0, `${played.length} vs ${s.timeline.tones.length}`);
     e.dispose();
   }
 
