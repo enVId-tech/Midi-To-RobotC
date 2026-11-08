@@ -50,6 +50,21 @@ functions (including `&` parameters), tasks, `#define`, the `PlayTone` sound que
 Motors and sensors are simple stand-ins, `PlaySound` effects are approximations, and
 sound files can't be played.
 
+## Search and sharing
+
+The page has a title and description, a canonical link, Open Graph and Twitter cards with a generated preview image, schema.org
+data (WebApplication and FAQPage), a sitemap, robots.txt, a web app manifest and an icon. It also has a written guide and FAQ,
+and a note frequency reference page at `/nxt-note-frequencies`.
+
+Set the site address when you build, so canonical links, the sitemap and previews point at the real site:
+
+```bash
+NEXT_PUBLIC_SITE_URL=https://your-domain.example npm run build
+```
+
+For the Docker workflow, add a repository variable named `SITE_URL` (Settings, Secrets and variables, Actions, Variables).
+Then add the site in Google Search Console and Bing Webmaster Tools and submit `/sitemap.xml`.
+
 ## Layout
 
 ```
@@ -58,6 +73,8 @@ lib/attribution.ts        author, repository and license shown in the page
 components/Simulator.tsx  simulator UI (CodeView, NxtBrick, PianoRoll)
 lib/midiToRobotC.ts       MIDI -> RobotC conversion
 lib/zip.ts                zip writer for downloading every NXT program at once
+lib/site.ts, lib/faq.ts   site address and metadata, FAQ text (also used for structured data)
+components/SeoContent.tsx guide and FAQ under the tool
 lib/robotc/               lexer, parser, type checker, interpreter
 lib/sim/engine.ts         playback, seeking, stepping, breakpoints, selections
 lib/sim/audio.ts          Web Audio speakers and the original-MIDI preview
